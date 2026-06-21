@@ -1,127 +1,149 @@
 'use client';
 
 import { useState } from 'react';
+import { generateBrandNames } from '../lib/marketEngine';
 
-// قاموس اللغات للترجمة الفورية داخل الواجهة
 const translations = {
   en: {
-    title: "Market Intelligence Assets",
-    sub: "Institutional transaction logs and valuation matrices.",
-    volume: "Volume Cap",
-    mean: "Mean Asset Price",
-    floor: "Floor Limit",
-    tableTitle: "📊 Verified Transaction Matrix",
-    thAsset: "Asset Identifier",
-    thValue: "Settlement Value",
-    thIndex: "Index Baseline",
-    articleTitle: "Institutional Deep-Dive",
-    desc: "Short-form digital identifiers represent finite cryptographic real estate."
+    title: "AI Brand & Domain Name Generator",
+    sub: "Generate premium corporate names and check instant domain availability.",
+    placeholder: "Enter a keyword (e.g., cloud, food, meta)...",
+    btnGenerate: "Generate Names",
+    category: "Business Category",
+    all: "All Industries",
+    tech: "Tech & AI",
+    commerce: "E-Commerce & Retail",
+    tableTitle: "🎯 Generated Brand & Domain Options",
+    thBrand: "Brand Name",
+    thDomain: "Available Domain",
+    thPrice: "Est. Reg Fee",
+    premium: "Premium Asset",
+    noData: "Enter a keyword above to generate instant brand identities."
   },
   ar: {
-    title: "ذكاء بيانات السوق الرقمية",
-    sub: "سجلات المعاملات المؤسسية ومصفوفات التقييم المالي.",
-    volume: "إجمالي حجم التداول",
-    mean: "متوسط سعر النطاق",
-    floor: "الحد الأدنى للسعر (Floor)",
-    tableTitle: "📊 مصفوفة المعاملات التي تم التحقق منها",
-    thAsset: "معرف النطاق (الأصل)",
-    thValue: "قيمة التسوية",
-    thIndex: "مؤشر القياس الأساسي",
-    articleTitle: "تحليل عميق للمؤسسات",
-    desc: "تمثل المعرفات الرقمية قصيرة الطول عقارات رقمية محدودة ومشفرة."
+    title: "مُولِّد أسماء الشركات والنطاقات الذكي",
+    sub: "ابتكر أسماء براندات احترافية وافحص توفر النطاقات الرقمية فوراً.",
+    placeholder: "أدخل كلمة مفتاحية (مثل: cloud, food, meta)...",
+    btnGenerate: "توليد الأسماء",
+    category: "مجال العمل والنشاط",
+    all: "جميع المجالات",
+    tech: "التكنولوجيا والذكاء الاصطناعي",
+    commerce: "التجارة الإلكترونية والتجزئة",
+    tableTitle: "🎯 خيارات الأسماء والنطاقات المقترحة",
+    thBrand: "اسم البراند / الشركة",
+    thDomain: "النطاق المتاح (Domain)",
+    thPrice: "رسوم التسجيل المتوقعة",
+    premium: "أصل مميز (Premium)",
+    noData: "أدخل كلمة مفتاحية في الأعلى لابتكار هوية تجارية فورية."
   },
   fr: {
-    title: "Intelligence Marché des Actifs",
-    sub: "Journaux des transactions institutionnelles et matrices d'évaluation.",
-    volume: "Capacité de Volume",
-    mean: "Prix Moyen de l'Actif",
-    floor: "Limite Plancher",
-    tableTitle: "📊 Matrix des Transactions Vérifiées",
-    thAsset: "Identifiant de l'Actif",
-    thValue: "Valeur de Règlement",
-    thIndex: "Indice de Référence",
-    articleTitle: "Analyse Approfondie Institutionnelle",
-    desc: "Les identifiants numériques courts représentent un immobilier cryptographique fini."
+    title: "Générateur de Noms de Marque & Domaines",
+    sub: "Générez des noms d'entreprise premium et vérifiez la disponibilité des domaines.",
+    placeholder: "Entrez un mot-clé (ex: cloud, food, meta)...",
+    btnGenerate: "Générer",
+    category: "Catégorie d'Activité",
+    all: "Toutes Industries",
+    tech: "Tech & IA",
+    commerce: "E-Commerce & Vente",
+    tableTitle: "🎯 Options de Marques & Domaines Générés",
+    thBrand: "Nom de Marque",
+    thDomain: "Domaine Disponible",
+    thPrice: "Frais d'Enreg. Est.",
+    premium: "Actif Premium",
+    noData: "Entrez un mot-clé ci-dessus pour générer des identités de marque instantanées."
   }
 };
 
-// بيانات وهمية سريعة للمحاكاة التفاعلية الفورية في الواجهة
-const mockData = {
-  3: { volume: 843000, avg: 281000, floor: 120000, sales: [{name: 'xyz.ai', price: 450000}, {name: 'abc.org', price: 273000}] },
-  4: { volume: 539000, avg: 269500, floor: 89000, sales: [{name: 'meta.ai', price: 450000}, {name: 'data.org', price: 89000}] }
-};
-
-export default function InteractiveDomainHub() {
-  const [lang, setLang] = useState('en');
-  const [length, setLength] = useState(4);
+export default function BrandGeneratorPage() {
+  const [lang, setLang] = useState('ar'); // الافتراضي لغة عربية مريحة
+  const [keyword, setKeyword] = useState('');
+  const [category, setCategory] = useState('all');
+  const [results, setResults] = useState([]);
 
   const t = translations[lang];
-  const currentData = mockData[length];
+
+  const handleGenerate = (e) => {
+    e.preventDefault();
+    if (!keyword.trim()) return;
+    const data = generateBrandNames(keyword, category);
+    setResults(data);
+  };
 
   return (
     <main style={{ padding: '40px 24px', fontFamily: 'system-ui, sans-serif', backgroundColor: '#020617', color: '#f8fafc', minHeight: '100vh', direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
-      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
         
-        {/* شريط التحكم العلوي: تغيير اللغة واختيار الطول */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #1e293b' }}>
-          <div>
-            <span style={{ fontWeight: 'bold', marginRight: lang === 'ar' ? '0' : '8px', marginLeft: lang === 'ar' ? '8px' : '0' }}>Length: </span>
-            <button onClick={() => setLength(3)} style={{ padding: '6px 16px', backgroundColor: length === 3 ? '#818cf8' : '#0f172a', color: '#fff', border: '1px solid #334155', borderRadius: '6px', cursor: 'pointer', marginRight: '4px', marginLeft: '4px' }}>3 Letters</button>
-            <button onClick={() => setLength(4)} style={{ padding: '6px 16px', backgroundColor: length === 4 ? '#818cf8' : '#0f172a', color: '#fff', border: '1px solid #334155', borderRadius: '6px', cursor: 'pointer' }}>4 Letters</button>
-          </div>
-          
-          <div>
-            <select value={lang} onChange={(e) => setLang(e.target.value)} style={{ padding: '6px 12px', backgroundColor: '#0f172a', color: '#fff', border: '1px solid #334155', borderRadius: '6px', cursor: 'pointer' }}>
-              <option value="en">English 🇬🇧</option>
-              <option value="ar">العربية 🇩🇿</option>
-              <option value="fr">Français 🇫🇷</option>
-            </select>
-          </div>
+        {/* شريط تبديل اللغات */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
+          <select value={lang} onChange={(e) => setLang(e.target.value)} style={{ padding: '8px 16px', backgroundColor: '#0f172a', color: '#fff', border: '1px solid #334155', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
+            <option value="ar">العربية 🇩🇿</option>
+            <option value="en">English 🇬🇧</option>
+            <option value="fr">Français 🇫🇷</option>
+          </select>
         </div>
 
-        {/* عنوان الموقع المترجم */}
-        <header style={{ marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: '800', margin: '0 0 8px 0', color: '#fff' }}>
-            {t.title}: <span style={{ color: '#818cf8' }}>{length}-Letter</span>
-          </h1>
-          <p style={{ color: '#94a3b8', margin: 0 }}>{t.sub}</p>
+        {/* الهيدر */}
+        <header style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#fff', marginBottom: '12px' }}>{t.title}</h1>
+          <p style={{ color: '#94a3b8', fontSize: '16px', margin: 0 }}>{t.sub}</p>
         </header>
 
-        {/* بطاقات الإحصائيات المتغيرة ديناميكياً */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '40px' }}>
-          <div style={{ backgroundColor: '#0f172a', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b' }}>
-            <span style={{ color: '#64748b', fontSize: '12px', fontWeight: '600' }}>{t.volume}</span>
-            <div style={{ fontSize: '24px', fontWeight: '700', marginTop: '6px' }}>${currentData.volume.toLocaleString()}</div>
-          </div>
-          <div style={{ backgroundColor: '#0f172a', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b' }}>
-            <span style={{ color: '#64748b', fontSize: '12px', fontWeight: '600' }}>{t.mean}</span>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: '#818cf8', marginTop: '6px' }}>${currentData.avg.toLocaleString()}</div>
-          </div>
-          <div style={{ backgroundColor: '#0f172a', padding: '20px', borderRadius: '12px', border: '1px solid #1e293b' }}>
-            <span style={{ color: '#64748b', fontSize: '12px', fontWeight: '600' }}>{t.floor}</span>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: '#34d399', marginTop: '6px' }}>${currentData.floor.toLocaleString()}</div>
-          </div>
-        </div>
+        {/* نموذج الإدخال والبحث (التفاعل الحقيقي) */}
+        <section style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '24px', marginBottom: '40px' }}>
+          <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#cbd5e1' }}>{t.category}</label>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                {['all', 'tech', 'commerce'].map((cat) => (
+                  <button key={cat} type="button" onClick={() => setCategory(cat)} style={{ padding: '10px 20px', backgroundColor: category === cat ? '#818cf8' : '#1e293b', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', transition: 'background-color 0.2s' }}>
+                    {t[cat]}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-        {/* الجدول التفاعلي المترجم */}
-        <section style={{ backgroundColor: '#0f172a', borderRadius: '12px', border: '1px solid #1e293b', padding: '24px' }}>
-          <h2 style={{ fontSize: '18px', marginBottom: '16px', color: '#fff' }}>{t.tableTitle}</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: lang === 'ar' ? 'right' : 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #1e293b', color: '#64748b', fontSize: '12px' }}>
-                <th style={{ padding: '12px' }}>{t.thAsset}</th>
-                <th style={{ padding: '12px' }}>{t.thValue}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentData.sales.map((asset, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid #1e293b' }}>
-                  <td style={{ padding: '12px', fontWeight: '600' }}>{asset.name}</td>
-                  <td style={{ padding: '12px', color: '#34d399' }}>${asset.price.toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <input type="text" value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder={t.placeholder} style={{ flex: 1, minWidth: '280px', padding: '14px 16px', backgroundColor: '#020617', border: '1px solid #334155', borderRadius: '8px', color: '#fff', fontSize: '16px', outline: 'none' }} />
+              <button type="submit" style={{ padding: '14px 28px', backgroundColor: '#34d399', color: '#020617', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '700', cursor: 'pointer' }}>
+                {t.btnGenerate}
+              </button>
+            </div>
+
+          </form>
+        </section>
+
+        {/* جدول استعراض المخرجات وقاعدة البيانات الحركية */}
+        <section style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '24px' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#fff', marginTop: 0, marginBottom: '20px' }}>{t.tableTitle}</h2>
+          
+          {results.length === 0 ? (
+            <p style={{ color: '#64748b', textAlign: 'center', margin: '40px 0' }}>{t.noData}</p>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: lang === 'ar' ? 'right' : 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #1e293b', color: '#64748b', fontSize: '13px', textTransform: 'uppercase' }}>
+                    <th style={{ padding: '12px 16px' }}>{t.thBrand}</th>
+                    <th style={{ padding: '12px 16px' }}>{t.thDomain}</th>
+                    <th style={{ padding: '12px 16px' }}>{t.thPrice}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.map((item, index) => (
+                    <tr key={index} style={{ borderBottom: '1px solid #1e293b', fontSize: '15px' }}>
+                      <td style={{ padding: '16px', fontWeight: '700', color: '#fff' }}>
+                        {item.name}
+                        {item.premium && <span style={{ fontSize: '11px', backgroundColor: '#ca8a04', color: '#fff', padding: '2px 6px', borderRadius: '4px', marginInlineStart: '8px', fontWeight: 'normal' }}>{t.premium}</span>}
+                      </td>
+                      <td style={{ padding: '16px', color: '#818cf8', fontFamily: 'monospace' }}>{item.domain}</td>
+                      <td style={{ padding: '16px', color: '#34d399', fontWeight: '600' }}>${item.price}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
 
       </div>
