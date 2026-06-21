@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useState } from 'react';
 
 // ==========================================
-// محرك الخوارزميات الحقيقي (مدمج داخلياً لمنع أخطاء المسارات)
+// محرك الخوارزميات الحقيقي
 // ==========================================
 function generateBrandNamesInternal(keyword, category = 'all') {
   if (!keyword) return [];
@@ -120,7 +119,7 @@ const translations = {
 // المكون الرئيسي للواجهة
 // ==========================================
 export default function BrandGeneratorPage() {
-  const [lang, setLang] = useState('ar'); // افتراضي عربي
+  const [lang, setLang] = useState('en'); // تم التغيير إلى الإنجليزية كخيار افتراضي أول
   const [keyword, setKeyword] = useState('');
   const [category, setCategory] = useState('all');
   const [results, setResults] = useState([]);
@@ -130,48 +129,57 @@ export default function BrandGeneratorPage() {
   const handleGenerate = (e) => {
     e.preventDefault();
     if (!keyword.trim()) return;
-    // استدعاء الدالة الداخلية مباشرة بدون اعتمادات خارجية
     const data = generateBrandNamesInternal(keyword, category);
     setResults(data);
   };
 
   return (
-    <main style={{ padding: '40px 24px', fontFamily: 'system-ui, sans-serif', backgroundColor: '#020617', color: '#f8fafc', minHeight: '100vh', direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
+    <main style={{ padding: '24px 16px', fontFamily: 'system-ui, sans-serif', backgroundColor: '#020617', color: '#f8fafc', minHeight: '100vh', direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
         
         {/* شريط تغيير اللغة */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
           <select value={lang} onChange={(e) => setLang(e.target.value)} style={{ padding: '8px 16px', backgroundColor: '#0f172a', color: '#fff', border: '1px solid #334155', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
-            <option value="ar">العربية 🇩🇿</option>
             <option value="en">English 🇬🇧</option>
+            <option value="ar">العربية 🇩🇿</option>
             <option value="fr">Français 🇫🇷</option>
           </select>
         </div>
 
         {/* العنوان */}
-        <header style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#fff', marginBottom: '12px' }}>{t.title}</h1>
-          <p style={{ color: '#94a3b8', fontSize: '16px', margin: 0 }}>{t.sub}</p>
+        <header style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#fff', marginBottom: '12px', lineHeight: '1.3' }}>{t.title}</h1>
+          <p style={{ color: '#94a3b8', fontSize: '15px', margin: 0, lineHeight: '1.5' }}>{t.sub}</p>
         </header>
 
-        {/* صندوق الإدخال والتحكم */}
-        <section style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '24px', marginBottom: '40px' }}>
+        {/* صندوق الإدخال والتحكم المعدل ليكون متجاوباً تماماً مع الهاتف */}
+        <section style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '20px', marginBottom: '32px' }}>
           <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#cbd5e1' }}>{t.category}</label>
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <label style={{ display: 'block', marginBottom: '10px', fontWeight: '600', color: '#cbd5e1' }}>{t.category}</label>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {['all', 'tech', 'commerce'].map((cat) => (
-                  <button key={cat} type="button" onClick={() => setCategory(cat)} style={{ padding: '10px 20px', backgroundColor: category === cat ? '#818cf8' : '#1e293b', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', transition: 'background-color 0.2s' }}>
+                  <button key={cat} type="button" onClick={() => setCategory(cat)} style={{ padding: '10px 16px', backgroundColor: category === cat ? '#818cf8' : '#1e293b', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '14px', flex: '1 1 auto', minWidth: '120px', transition: 'background-color 0.2s' }}>
                     {t[cat]}
                   </button>
                 ))}
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              <input type="text" value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder={t.placeholder} style={{ flex: 1, minWidth: '280px', padding: '14px 16px', backgroundColor: '#020617', border: '1px solid #334155', borderRadius: '8px', color: '#fff', fontSize: '16px', outline: 'none' }} />
-              <button type="submit" style={{ padding: '14px 28px', backgroundColor: '#34d399', color: '#020617', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '700', cursor: 'pointer' }}>
+            {/* الحقول مرتبة بشكل مرن يمنع خروجها من الهاتف */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <input 
+                type="text" 
+                value={keyword} 
+                onChange={(e) => setKeyword(e.target.value)} 
+                placeholder={t.placeholder} 
+                style={{ width: '100%', boxSizing: 'border-box', padding: '14px 16px', backgroundColor: '#020617', border: '1px solid #334155', borderRadius: '8px', color: '#fff', fontSize: '16px', outline: 'none' }} 
+              />
+              <button 
+                type="submit" 
+                style={{ width: '100%', boxSizing: 'border-box', padding: '14px 28px', backgroundColor: '#34d399', color: '#020617', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '700', cursor: 'pointer' }}
+              >
                 {t.btnGenerate}
               </button>
             </div>
@@ -180,30 +188,30 @@ export default function BrandGeneratorPage() {
         </section>
 
         {/* مخرجات التوليد */}
-        <section style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '24px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#fff', marginTop: 0, marginBottom: '20px' }}>{t.tableTitle}</h2>
+        <section style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '20px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', marginTop: 0, marginBottom: '20px' }}>{t.tableTitle}</h2>
           
           {results.length === 0 ? (
-            <p style={{ color: '#64748b', textAlign: 'center', margin: '40px 0' }}>{t.noData}</p>
+            <p style={{ color: '#64748b', textAlign: 'center', margin: '40px 0', fontSize: '14px' }}>{t.noData}</p>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: lang === 'ar' ? 'right' : 'left' }}>
+            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: lang === 'ar' ? 'right' : 'left', minWidth: '500px' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #1e293b', color: '#64748b', fontSize: '13px', textTransform: 'uppercase' }}>
-                    <th style={{ padding: '12px 16px' }}>{t.thBrand}</th>
-                    <th style={{ padding: '12px 16px' }}>{t.thDomain}</th>
-                    <th style={{ padding: '12px 16px' }}>{t.thPrice}</th>
+                  <tr style={{ borderBottom: '1px solid #1e293b', color: '#64748b', fontSize: '12px', textTransform: 'uppercase' }}>
+                    <th style={{ padding: '12px 8px' }}>{t.thBrand}</th>
+                    <th style={{ padding: '12px 8px' }}>{t.thDomain}</th>
+                    <th style={{ padding: '12px 8px' }}>{t.thPrice}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {results.map((item, index) => (
-                    <tr key={index} style={{ borderBottom: '1px solid #1e293b', fontSize: '15px' }}>
-                      <td style={{ padding: '16px', fontWeight: '700', color: '#fff' }}>
+                    <tr key={index} style={{ borderBottom: '1px solid #1e293b', fontSize: '14px' }}>
+                      <td style={{ padding: '14px 8px', fontWeight: '700', color: '#fff' }}>
                         {item.name}
-                        {item.premium && <span style={{ fontSize: '11px', backgroundColor: '#ca8a04', color: '#fff', padding: '2px 6px', borderRadius: '4px', marginInlineStart: '8px', fontWeight: 'normal' }}>{t.premium}</span>}
+                        {item.premium && <span style={{ fontSize: '10px', backgroundColor: '#ca8a04', color: '#fff', padding: '2px 4px', borderRadius: '4px', marginInlineStart: '6px', fontWeight: 'normal', display: 'inline-block' }}>{t.premium}</span>}
                       </td>
-                      <td style={{ padding: '16px', color: '#818cf8', fontFamily: 'monospace' }}>{item.domain}</td>
-                      <td style={{ padding: '16px', color: '#34d399', fontWeight: '600' }}>${item.price}</td>
+                      <td style={{ padding: '14px 8px', color: '#818cf8', fontFamily: 'monospace' }}>{item.domain}</td>
+                      <td style={{ padding: '14px 8px', color: '#34d399', fontWeight: '600' }}>${item.price}</td>
                     </tr>
                   ))}
                 </tbody>
