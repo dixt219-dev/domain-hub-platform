@@ -1,8 +1,70 @@
+
 'use client';
 
 import { useState } from 'react';
-import { generateBrandNames } from '../lib/marketEngine';
 
+// ==========================================
+// محرك الخوارزميات الحقيقي (مدمج داخلياً لمنع أخطاء المسارات)
+// ==========================================
+function generateBrandNamesInternal(keyword, category = 'all') {
+  if (!keyword) return [];
+
+  const cleanKeyword = keyword.trim().toLowerCase();
+  
+  const prefixes = {
+    tech: ['meta', 'cyber', 'nexus', 'vertex', 'alpha', 'omni', 'quantum', 'cloud', 'data'],
+    commerce: ['shop', 'mart', 'cart', 'deal', 'lux', 'prime', 'global', 'trend'],
+    all: ['vibe', 'zen', 'core', 'nova', 'apex', 'axis', 'flow', 'hub', 'link']
+  };
+
+  const suffixes = {
+    tech: ['ai', 'io', 'labs', 'tech', 'sync', 'grid', 'base', 'node', 'wave'],
+    commerce: ['store', 'market', 'hub', 'bag', 'line', 'zone', 'style'],
+    all: ['ly', 'ify', 'hq', 'space', 'net', 'co', 'go', 'plus', 'nest']
+  };
+
+  const selectedPrefixes = prefixes[category] || prefixes.all;
+  const selectedSuffixes = suffixes[category] || suffixes.all;
+
+  const generated = [];
+
+  // 1. دمج البادئة مع الكلمة
+  selectedPrefixes.forEach(pref => {
+    generated.push({
+      name: `${pref}${cleanKeyword}`,
+      domain: `${pref}${cleanKeyword}.com`,
+      premium: Math.random() > 0.7,
+      price: Math.floor(Math.random() * 2000) + 15
+    });
+  });
+
+  // 2. دمج الكلمة مع اللاحقة
+  selectedSuffixes.forEach(suff => {
+    generated.push({
+      name: `${cleanKeyword}${suff}`,
+      domain: `${cleanKeyword}.${suff}`,
+      premium: suff === 'ai' || suff === 'io',
+      price: suff === 'ai' ? 149 : suff === 'io' ? 59 : 12
+    });
+  });
+
+  // 3. أسماء قصيرة مبتكرة
+  const shortBlends = ['ix', 'ora', 'neo', 'arc'];
+  shortBlends.forEach(blend => {
+    generated.push({
+      name: `${cleanKeyword}${blend}`,
+      domain: `${cleanKeyword}${blend}.com`,
+      premium: false,
+      price: 15
+    });
+  });
+
+  return generated;
+}
+
+// ==========================================
+// قاموس الترجمة الكامل للواجهة
+// ==========================================
 const translations = {
   en: {
     title: "AI Brand & Domain Name Generator",
@@ -54,8 +116,11 @@ const translations = {
   }
 };
 
+// ==========================================
+// المكون الرئيسي للواجهة
+// ==========================================
 export default function BrandGeneratorPage() {
-  const [lang, setLang] = useState('ar'); // الافتراضي لغة عربية مريحة
+  const [lang, setLang] = useState('ar'); // افتراضي عربي
   const [keyword, setKeyword] = useState('');
   const [category, setCategory] = useState('all');
   const [results, setResults] = useState([]);
@@ -65,7 +130,8 @@ export default function BrandGeneratorPage() {
   const handleGenerate = (e) => {
     e.preventDefault();
     if (!keyword.trim()) return;
-    const data = generateBrandNames(keyword, category);
+    // استدعاء الدالة الداخلية مباشرة بدون اعتمادات خارجية
+    const data = generateBrandNamesInternal(keyword, category);
     setResults(data);
   };
 
@@ -73,7 +139,7 @@ export default function BrandGeneratorPage() {
     <main style={{ padding: '40px 24px', fontFamily: 'system-ui, sans-serif', backgroundColor: '#020617', color: '#f8fafc', minHeight: '100vh', direction: lang === 'ar' ? 'rtl' : 'ltr' }}>
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
         
-        {/* شريط تبديل اللغات */}
+        {/* شريط تغيير اللغة */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
           <select value={lang} onChange={(e) => setLang(e.target.value)} style={{ padding: '8px 16px', backgroundColor: '#0f172a', color: '#fff', border: '1px solid #334155', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
             <option value="ar">العربية 🇩🇿</option>
@@ -82,13 +148,13 @@ export default function BrandGeneratorPage() {
           </select>
         </div>
 
-        {/* الهيدر */}
+        {/* العنوان */}
         <header style={{ textAlign: 'center', marginBottom: '40px' }}>
           <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#fff', marginBottom: '12px' }}>{t.title}</h1>
           <p style={{ color: '#94a3b8', fontSize: '16px', margin: 0 }}>{t.sub}</p>
         </header>
 
-        {/* نموذج الإدخال والبحث (التفاعل الحقيقي) */}
+        {/* صندوق الإدخال والتحكم */}
         <section style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '24px', marginBottom: '40px' }}>
           <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             
@@ -113,7 +179,7 @@ export default function BrandGeneratorPage() {
           </form>
         </section>
 
-        {/* جدول استعراض المخرجات وقاعدة البيانات الحركية */}
+        {/* مخرجات التوليد */}
         <section style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '24px' }}>
           <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#fff', marginTop: 0, marginBottom: '20px' }}>{t.tableTitle}</h2>
           
