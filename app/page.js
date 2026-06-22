@@ -35,7 +35,7 @@ export default function AdvancedDomainGeneratorPage() {
     }));
     setResults(initialResults);
 
-    // الفحص المتسلسل الآمن والمنظم لمنع تجميد المتصفح
+    // الفحص المتسلسل المنظم والمطابق لاسم المجلد check-domains
     for (let i = 0; i < domainList.length; i++) {
       const dom = domainList[i];
 
@@ -46,11 +46,11 @@ export default function AdvancedDomainGeneratorPage() {
       });
 
       try {
-        // حماية الطلب بمهلة زمنية قدرها 3 ثوانٍ فقط لمنع التعليق اللانهائي
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
 
-        const res = await fetch(`/api/check-domain?domain=${dom}`, { signal: controller.signal });
+        // تعديل الرابط هنا بإضافة حرف s ليصبح مطابقاً للمجلد تماماً
+        const res = await fetch(`/api/check-domains?domain=${dom}`, { signal: controller.signal });
         clearTimeout(timeoutId);
         
         const data = await res.json();
@@ -80,7 +80,6 @@ export default function AdvancedDomainGeneratorPage() {
         });
       }
 
-      // تأخير بسيط جداً متبوع بين الطلبات لتفادي حظر الـ API
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
