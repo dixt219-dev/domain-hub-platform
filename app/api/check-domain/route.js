@@ -4,11 +4,10 @@ export async function POST(request) {
   try {
     const { domain } = await request.json();
     
-    // جلب المفاتيح من ملف البيئة بأمان
     const apiKey = 8S6i8iH8e7i8Bb8G7E607IJ9J6O8o8t856Kw7E8W7QE;
     const secretKey = 492bf2747f4ee49f00c92f86039b9bd84ad523a668a8281db76ce3c9f1e6e116;
 
-    // طلب الفحص من سيرفر دينادوت الرسمي
+    // طلب الفحص الكامل الذي يحتوي على تفاصيل الأسعار والتجديد
     const response = await fetch(`https://api.dynadot.com/v3/virtual/domain/search?domain=${domain}`, {
       method: 'GET',
       headers: {
@@ -19,13 +18,21 @@ export async function POST(request) {
 
     const data = await response.json();
 
-    // استخراج الحالة والسعر الحقيقي
-    const isAvailable = data.results?.[0]?.available === true;
-    const price = data.results?.[0]?.price || "12.99"; 
+    // التحقق من استجابة دينادوت وقراءة الأسعار الحية
+    const result = data.results?.[0] || {};
+    const isAvailable = result.available === true;
+    
+    // جلب السعر الفعلي وإذا لم يتوفر نضع قيمة احتياطية قريبة
+    let realPrice = "12.99";
+    if (isAvailable && result.price) {
+      realPrice = result.price; 
+    } else if (!isAvailable) {
+      realPrice = "N/A"; // محجوز
+    }
 
     return NextResponse.json({
       available: isAvailable,
-      price: price
+      price: realPrice
     });
 
   } catch (error) {
