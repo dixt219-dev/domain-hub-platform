@@ -1,45 +1,34 @@
 import { NextResponse } from 'next/server';
 
-export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  const domain = searchParams.get('domain');
-
-  if (!domain) {
-    return NextResponse.json({ error: 'Domain is required' }, { status: 400 });
-  }
-
+export async function POST(request) {
   try {
-    // الاستعلام مباشرة من قاعدة بيانات RDAP العالمية الموثوقة التي تستخدمها شركات التسجيل
-    // هذه الخدمة تعطي الحالة الحقيقية للحجز سواء كان الدومين مستخدماً أو مركوناً بدون استضافة
-    const res = await fetch(`https://rdap.org/domain/${domain}`, {
-      headers: { 'Accept': 'application/json' },
-      next: { revalidate: 0 } // منع الكاش تماماً لضمان فحص حي لحظة بلحظة
+    const { domain } = await request.json();
+    
+    // جلب المفاتيح من ملف البيئة بأمان
+    const apiKey = 8S6i8iH8e7i8Bb8G7E607IJ9J6O8o8t856Kw7E8W7QE;
+    const secretKey = 492bf2747f4ee49f00c92f86039b9bd84ad523a668a8281db76ce3c9f1e6e116;
+
+    // طلب الفحص من سيرفر دينادوت الرسمي
+    const response = await fetch(`https://api.dynadot.com/v3/virtual/domain/search?domain=${domain}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Basic ${Buffer.from(`${apiKey}:${secretKey}`).toString('base64')}`,
+        'Content-Type': 'application/json'
+      }
     });
 
-    // إذا عادت قاعدة البيانات بـ 404، فهذا هو الإثبات القاطع الوحيد في عالم الإنترنت أن الدومين متاح للشراء!
-    if (res.status === 404) {
-      // جدول أسعار Dynadot / Namecheap الحقيقية التقريبية للتسجيل السنوي لأشهر الامتدادات
-      const prices = { com: 13.98, net: 14.98, org: 15.15, io: 38.99, ai: 69.99, tech: 3.99, xyz: 1.99 };
-      const ext = domain.split('.').pop();
-      const price = prices[ext] || 12.99;
+    const data = await response.json();
 
-      return NextResponse.json({
-        domain,
-        available: true,
-        statusText: 'Available',
-        price: `$${price}`
-      });
-    }
+    // استخراج الحالة والسعر الحقيقي
+    const isAvailable = data.results?.[0]?.available === true;
+    const price = data.results?.[0]?.price || "12.99"; 
 
-    // إذا كود الحالة 200 أو أي شيء آخر، فالدومين محجوز رسمياً في السجلات العالمية
     return NextResponse.json({
-      domain,
-      available: false,
-      statusText: 'Taken / Registered',
-      price: 'N/A'
+      available: isAvailable,
+      price: price
     });
 
   } catch (error) {
-    return NextResponse.json({ domain, available: false, statusText: 'Error Checking', price: 'N/A' });
+    return NextResponse.json({ error: "تعذر الاتصال بالسيرفر" }, { status: 500 });
   }
 }
