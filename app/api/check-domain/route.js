@@ -12,52 +12,39 @@ export async function POST(request) {
     const domainName = domain.substring(0, lastDotIndex);
     const tld = domain.substring(lastDotIndex + 1);
 
-    const apiKey = "8S6i8iH8e7i8Bb8G7E607IJ9J6O8o8t856Kw7E8W7QE";
+    const apiKey = "8S6i8iH8e7i8Bb8G7E607IJ9J608o8t856Kw7E8W7QE";
 
-    // طلب البحث القياسي
-    const apiUrl = `https://api.dynadot.com/v3/virtual/domain/search?key=${apiKey}&domain=${domainName}&tlds=${tld}`;
+    const apiUrl = `https://api.dynadot.com/v3/virtual/domain/search?key=${apiKey}&domain=${domainName}&tlds=${tld}&format=json`;
     
     const response = await fetch(apiUrl, { method: 'GET' });
     
     if (!response.ok) {
+      console.error(`Dynadot API error status: ${response.status}`);
       return NextResponse.json({ available: false, price: "N/A" });
     }
 
-    // قراءة الاستجابة كنص خام لتفادي أخطاء الـ XML
-    const rawText = await response.text();
-    console.log("Dynadot Raw Response:", rawText); // لمراقبة الرد في Vercel Logs
+    const data = await response.json();
+    
+    // طباعة الرد الحقيقي في سيرفر Vercel لكشف المشكلة بدقة
+    console.log("Dynadot Raw Data:", JSON.stringify(data));
 
-    let isAvailable = false;
-    let realPrice = "12.99";
+    // فحص شامل ومميت لكل الصيغ الممكنة للـ API لمنع الـ N/A
+    const searchResponse = data?.SearchResponse || data?.searchResponse;
+    const searchResult = searchResponse?.SearchResults?.[0] || searchResponse?.searchResults?.[0] || data?.[0];
+    
+    if (!searchResult) {
+      // إذا كان الرد فارغاً أو هناك مشكلة في المفتاح
+      return NextResponse.json({ available: false, price: "Error Key" });
+    }
 
-    // 1. التحقق إذا كانت الاستجابة القادمة بصيغة XML (وهي النظام الافتراضي لـ Dynadot)
-    if (rawText.includes('<Available>') || rawText.includes('<available>')) {
-      const availableMatch = rawText.match(/<Available>(.*?)<\/Available>/i);
-      const priceMatch = rawText.match(/<Price>(.*?)<\/Price>/i);
-      
-      const status = availableMatch ? availableMatch[1].toLowerCase() : 'no';
-      isAvailable = (status === 'yes' || status === 'true');
-      
-      if (isAvailable && priceMatch) {
-        realPrice = priceMatch[1];
-      } else if (!isAvailable) {
-        realPrice = "N/A";
-      }
-    } 
-    // 2. التحقق كخيار احتياطي إذا تحولت الاستجابة إلى JSON
-    else if (rawText.trim().startsWith('{')) {
-      const data = JSON.parse(rawText);
-      const searchResponse = data?.SearchResponse || data?.searchResponse;
-      const searchResult = searchResponse?.SearchResults?.[0] || searchResponse?.searchResults?.[0];
-      
-      const status = (searchResult?.Available || searchResult?.available || "").toString().toLowerCase();
-      isAvailable = (status === "yes" || status === "true");
-      
-      if (isAvailable) {
-        realPrice = searchResult?.Price || searchResult?.price || "12.99";
-      } else {
-        realPrice = "N/A";
-      }
+    const availableStatus = (searchResult?.Available || searchResult?.available || "").toString().toLowerCase();
+    const isAvailable = availableStatus === "yes" || availableStatus === "true" || availableStatus === "available";
+    
+    let realPrice = "12.99"; 
+    if (isAvailable) {
+      realPrice = searchResult?.Price || searchResult?.price || "12.99";
+    } else {
+      realPrice = "N/A";
     }
 
     return NextResponse.json({
@@ -66,7 +53,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error("خطأ أثناء فحص النطاق:", error);
-    return NextResponse.json({ available: false, price: "N/A", error: error.message });
+    console.error("Crash Error:", error);
+    return NextResponse.json({ error: "تعذر التحقق" }, { status: 500 });
   }
 }
