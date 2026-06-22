@@ -34,17 +34,8 @@ export async function GET(request) {
     }
 
     const dynadotUrl = `https://api.dynadot.com/api3.json?key=${DYNADOT_API_KEY}&command=search&domain0=${cleanDomain}`;
-    
-    // تحديد مهلة زمنية للطلب (4 ثوانٍ) لمنع تعليق خوادم Vercel والواجهة
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
 
-    const res = await fetch(dynadotUrl, { 
-      next: { revalidate: 0 },
-      signal: controller.signal 
-    });
-    
-    clearTimeout(timeoutId);
+    const res = await fetch(dynadotUrl, { next: { revalidate: 0 } });
 
     if (!res.ok) {
       throw new Error(`Dynadot HTTP error: ${res.status}`);
