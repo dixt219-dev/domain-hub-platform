@@ -1,10 +1,11 @@
 'use client';
 import { useState } from 'react';
 
-const EXTENSIONS = ['com', 'net', 'org', 'io', 'ai', 'tech', 'co', 'app', 'dev', 'xyz', 'shop', 'online', 'me', 'biz', 'info'];
-const PREFIXES  = ['hub', 'box', 'labs', 'next', 'core', 'nova', 'apex', 'flow', 'grid', 'base'];
-
 export default function AdvancedDomainGeneratorPage() {
+  // وضع المصفوفات الثابتة داخل المكون لتفادي خطأ Prerender / Module
+  const EXTENSIONS = ['com', 'net', 'org', 'io', 'ai', 'tech', 'co', 'app', 'dev', 'xyz', 'shop', 'online', 'me', 'biz', 'info'];
+  const PREFIXES  = ['hub', 'box', 'labs', 'next', 'core', 'nova', 'apex', 'flow', 'grid', 'base'];
+
   const [keyword, setKeyword]   = useState('');
   const [results, setResults]   = useState([]);
   const [loading, setLoading]   = useState(false);
@@ -35,7 +36,7 @@ export default function AdvancedDomainGeneratorPage() {
     }));
     setResults(initialResults);
 
-    // الفحص المتسلسل المنظم والمطابق لاسم المجلد check-domains
+    // الفحص المتسلسل الآمن والمطابق لاسم المجلد check-domains
     for (let i = 0; i < domainList.length; i++) {
       const dom = domainList[i];
 
@@ -49,7 +50,6 @@ export default function AdvancedDomainGeneratorPage() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 4000);
 
-        // تعديل الرابط هنا بإضافة حرف s ليصبح مطابقاً للمجلد تماماً
         const res = await fetch(`/api/check-domains?domain=${dom}`, { signal: controller.signal });
         clearTimeout(timeoutId);
         
