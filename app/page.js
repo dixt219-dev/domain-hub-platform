@@ -17,7 +17,7 @@ export default function AdvancedDomainGeneratorPage() {
 
     const clean = keyword.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 
-    // بناء قائمة النطاقات المقترحة
+    // بناء قائمة النطاقات
     const candidates = new Set();
     EXTENSIONS.forEach(ext => candidates.add(`${clean}.${ext}`));
     PREFIXES.forEach(pfx => {
@@ -28,7 +28,7 @@ export default function AdvancedDomainGeneratorPage() {
 
     const domainList = [...candidates];
 
-    // وضع الحالة الابتدائية لجميع النطاقات قبل بدء الفحص
+    // وضع الحالة المبدئية: Waiting
     const initialResults = domainList.map(dom => ({
       domain: dom,
       status: 'Waiting...',
@@ -37,39 +37,40 @@ export default function AdvancedDomainGeneratorPage() {
     }));
     setResults(initialResults);
 
-    // فحص النطاقات بشكل متسلسل ومضمون 100% لتفادي التجميد
+    // الفحص المتسلسل الآمن
     for (let i = 0; i < domainList.length; i++) {
       const dom = domainList[i];
 
-      // تحديث حالة النطاق الحالي ليظهر أنه قيد الفحص الآن
-      setResults(prev =>
-        prev.map(r => r.domain === dom ? { ...r, status: '⏳ Checking...' } : r)
-      );
+      // تحويل النطاق الحالي فقط إلى Checking
+      setResults(prev => {
+        const next = [...prev];
+        if (next[i]) next[i].status = '⏳ Checking...';
+        return next;
+      });
 
       try {
         const res = await fetch(`/api/check-domain?domain=${dom}`);
         const data = await res.json();
 
-        setResults(prev =>
-          prev.map(r =>
-            r.domain === dom
-              ? { 
-                  ...r, 
-                  status: data.available ? '✅ Available' : '❌ Taken', 
-                  available: data.available, 
-                  price: data.price || 'N/A' 
-                }
-              : r
-          )
-        );
+        setResults(prev => {
+          const next = [...prev];
+          if (next[i]) {
+            next[i].status = data.available ? '✅ Available' : '❌ Taken';
+            next[i].available = data.available;
+            next[i].price = data.price || 'N/A';
+          }
+          return next;
+        });
       } catch (err) {
-        setResults(prev =>
-          prev.map(r => 
-            r.domain === dom 
-              ? { ...r, status: '⚠️ Error', available: false, price: 'N/A' } 
-              : r
-          )
-        );
+        setResults(prev => {
+          const next = [...prev];
+          if (next[i]) {
+            next[i].status = '⚠️ Error';
+            next[i].available = false;
+            next[i].price = 'N/A';
+          }
+          return next;
+        });
       }
     }
 
@@ -80,7 +81,6 @@ export default function AdvancedDomainGeneratorPage() {
     <main style={{ minHeight: '100vh', backgroundColor: '#020617', color: '#f8fafc', padding: '40px 20px', fontFamily: 'system-ui, sans-serif' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
 
-        {/* Header */}
         <header style={{ textAlign: 'center', marginBottom: '40px' }}>
           <h1 style={{ fontSize: '2.2rem', fontWeight: '800', letterSpacing: '-0.02em', color: '#fff' }}>
             🛡️ Professional Live Domain Scanner
@@ -90,7 +90,6 @@ export default function AdvancedDomainGeneratorPage() {
           </p>
         </header>
 
-        {/* Search Form */}
         <section style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '28px', marginBottom: '32px' }}>
           <form onSubmit={handleGenerate} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <input
@@ -119,7 +118,6 @@ export default function AdvancedDomainGeneratorPage() {
           </form>
         </section>
 
-        {/* Results Table */}
         {results.length > 0 && (
           <section style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '24px', overflowX: 'auto' }}>
             <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#94a3b8', marginBottom: '16px' }}>
