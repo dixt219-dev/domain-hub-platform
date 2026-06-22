@@ -4,11 +4,11 @@ export async function POST(request) {
   try {
     const { domain } = await request.json();
     
-    // وضع المفاتيح داخل نصوص مغلقة بعلامات التنصيص لمنع أخطاء البناء
+    // المفاتيح نضعها داخل علامات تنصيص "" لكي يقبلها السيرفر أثناء الـ Build
     const apiKey = "8S6i8iH8e7i8Bb8G7E607IJ9J608o8t856Kw7E8W7QE";
     const secretKey = "492bf2747f4ee49f00c92f86039b9bd84ad523a568a8281db76ce3c9f1e8e116";
 
-    // إرسال الطلب إلى سيرفر Dynadot الرسمي مع حزمة التحقق
+    // الاتصال بالـ API لجلب حالة الدومين مع الأسعار الحية الحقيقية
     const response = await fetch(`https://api.dynadot.com/v3/virtual/domain/search?domain=${domain}`, {
       method: 'GET',
       headers: {
@@ -19,15 +19,16 @@ export async function POST(request) {
 
     const data = await response.json();
 
-    // قراءة النتيجة والأسعار الحية من السيرفر
+    // استخراج بيانات النتيجة الحية
     const result = data.results?.[0] || {};
     const isAvailable = result.available === true;
     
+    // جلب السعر الفعلي المرجوع من Dynadot مباشرة
     let realPrice = "12.99";
     if (isAvailable && result.price) {
-      realPrice = result.price; 
+      realPrice = result.price; // سيقرأ 28.89 تلقائياً للنطاق المطلق
     } else if (!isAvailable) {
-      realPrice = "N/A"; 
+      realPrice = "N/A";
     }
 
     return NextResponse.json({
