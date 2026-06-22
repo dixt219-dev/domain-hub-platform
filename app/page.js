@@ -17,7 +17,6 @@ export default function AdvancedDomainGeneratorPage() {
 
     const clean = keyword.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 
-    // بناء قائمة النطاقات
     const candidates = new Set();
     EXTENSIONS.forEach(ext => candidates.add(`${clean}.${ext}`));
     PREFIXES.forEach(pfx => {
@@ -28,7 +27,6 @@ export default function AdvancedDomainGeneratorPage() {
 
     const domainList = [...candidates];
 
-    // تهيئة الجدول بحالة الانتظار المبدئية
     const initialResults = domainList.map(dom => ({
       domain: dom,
       status: 'Waiting...',
@@ -37,11 +35,10 @@ export default function AdvancedDomainGeneratorPage() {
     }));
     setResults(initialResults);
 
-    // فحص النطاقات واحداً تلو الآخر بانتظام لمنع الحظر
+    // الفحص المتسلسل الآمن والمنظم لمنع تجميد المتصفح
     for (let i = 0; i < domainList.length; i++) {
       const dom = domainList[i];
 
-      // تحديث حالة النطاق الحالي إلى Checking
       setResults(prev => {
         const next = [...prev];
         if (next[i]) next[i].status = '⏳ Checking...';
@@ -49,15 +46,25 @@ export default function AdvancedDomainGeneratorPage() {
       });
 
       try {
-        const res = await fetch(`/api/check-domain?domain=${dom}`);
+        // حماية الطلب بمهلة زمنية قدرها 3 ثوانٍ فقط لمنع التعليق اللانهائي
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+        const res = await fetch(`/api/check-domain?domain=${dom}`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
         const data = await res.json();
 
         setResults(prev => {
           const next = [...prev];
           if (next[i]) {
-            next[i].status = data.available ? '✅ Available' : '❌ Taken';
-            next[i].available = data.available;
-            next[i].price = data.price || 'N/A';
+            if (data.error) {
+              next[i].status = `⚠️ ${data.error}`;
+            } else {
+              next[i].status = data.available ? '✅ Available' : '❌ Taken';
+              next[i].available = data.available;
+              next[i].price = data.price || 'N/A';
+            }
           }
           return next;
         });
@@ -65,7 +72,7 @@ export default function AdvancedDomainGeneratorPage() {
         setResults(prev => {
           const next = [...prev];
           if (next[i]) {
-            next[i].status = '⚠️ Error';
+            next[i].status = '⚠️ Timeout/Error';
             next[i].available = false;
             next[i].price = 'N/A';
           }
@@ -73,8 +80,8 @@ export default function AdvancedDomainGeneratorPage() {
         });
       }
 
-      // تأخير إجباري بمقدار 200 ميلّي ثانية بين كل نطاق ونطاق لكي يستقر اتصال الـ API
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // تأخير بسيط جداً متبوع بين الطلبات لتفادي حظر الـ API
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     setLoading(false);
