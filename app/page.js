@@ -17,7 +17,7 @@ export default function AdvancedDomainGeneratorPage() {
 
     const clean = keyword.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 
-    // بناء قائمة النطاقات المقترحة
+    // بناء قائمة المقترحات
     const candidates = new Set();
     EXTENSIONS.forEach(ext => candidates.add(`${clean}.${ext}`));
     PREFIXES.forEach(pfx => {
@@ -35,33 +35,40 @@ export default function AdvancedDomainGeneratorPage() {
     setResults(initialResults);
 
     const domainList = [...candidates];
-    const batchSize  = 3; // تقليل الحجم لتفادي الـ Rate Limit والـ Timeout
+    
+    // فحص النطاقات واحداً تلو الآخر لتفادي أي مشاكل أو تداخل في خوادم Vercel
+    for (const dom of domainList) {
+      try {
+        const res = await fetch(`/api/check-domain?domain=${dom}`);
+        const data = await res.json();
 
-    for (let i = 0; i < domainList.length; i += batchSize) {
-      const batch = domainList.slice(i, i + batchSize);
-      await Promise.all(batch.map(async (dom) => {
-        try {
-          const res  = await fetch(`/api/check-domain?domain=${dom}`);
-          const data = await res.json();
-          setResults(prev =>
-            prev.map(r =>
-              r.domain === dom
-                ? { ...r, status: data.available ? '✅ Available' : '❌ Taken', available: data.available, price: data.price }
-                : r
-            )
-          );
-        } catch {
-          setResults(prev =>
-            prev.map(r => r.domain === dom ? { ...r, status: '⚠️ Error', available: false, price: 'N/A' } : r)
-          );
-        }
-      }));
+        setResults(prev =>
+          prev.map(r =>
+            r.domain === dom
+              ? { 
+                  ...r, 
+                  status: data.available ? '✅ Available' : '❌ Taken', 
+                  available: data.available, 
+                  price: data.price || 'N/A' 
+                }
+              : r
+          )
+        );
+      } catch (err) {
+        setResults(prev =>
+          prev.map(r => 
+            r.domain === dom 
+              ? { ...r, status: '⚠️ Error', available: false, price: 'N/A' } 
+              : r
+          )
+        );
+      }
     }
 
     setLoading(false);
   };
 
-  return (
+  return(
     <main style={{ minHeight: '100vh', backgroundColor: '#020617', color: '#f8fafc', padding: '40px 20px', fontFamily: 'system-ui, sans-serif' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
 
@@ -144,17 +151,4 @@ export default function AdvancedDomainGeneratorPage() {
                         {item.status}
                       </span>
                     </td>
-                    <td style={{ padding: '12px', color: item.available ? '#10b981' : '#475569', fontWeight: '700' }}>
-                      {item.price}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        )}
-
-      </div>
-    </main>
-  );
-}
+                    <td style={{ padding: '12px', color: item.available
