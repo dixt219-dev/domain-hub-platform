@@ -17,7 +17,7 @@ export default function AdvancedDomainGeneratorPage() {
 
     const clean = keyword.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 
-    // بناء قائمة المقترحات
+    // بناء قائمة النطاقات المقترحة
     const candidates = new Set();
     EXTENSIONS.forEach(ext => candidates.add(`${clean}.${ext}`));
     PREFIXES.forEach(pfx => {
@@ -26,18 +26,26 @@ export default function AdvancedDomainGeneratorPage() {
       candidates.add(`${clean}${pfx}.io`);
     });
 
-    const initialResults = [...candidates].map(dom => ({
+    const domainList = [...candidates];
+
+    // وضع الحالة الابتدائية لجميع النطاقات قبل بدء الفحص
+    const initialResults = domainList.map(dom => ({
       domain: dom,
-      status: 'Checking...',
+      status: 'Waiting...',
       available: null,
       price: '-',
     }));
     setResults(initialResults);
 
-    const domainList = [...candidates];
-    
-    // فحص النطاقات واحداً تلو الآخر لتفادي أي مشاكل أو تداخل في خوادم Vercel
-    for (const dom of domainList) {
+    // فحص النطاقات بشكل متسلسل ومضمون 100% لتفادي التجميد
+    for (let i = 0; i < domainList.length; i++) {
+      const dom = domainList[i];
+
+      // تحديث حالة النطاق الحالي ليظهر أنه قيد الفحص الآن
+      setResults(prev =>
+        prev.map(r => r.domain === dom ? { ...r, status: '⏳ Checking...' } : r)
+      );
+
       try {
         const res = await fetch(`/api/check-domain?domain=${dom}`);
         const data = await res.json();
@@ -68,7 +76,7 @@ export default function AdvancedDomainGeneratorPage() {
     setLoading(false);
   };
 
-  return(
+  return (
     <main style={{ minHeight: '100vh', backgroundColor: '#020617', color: '#f8fafc', padding: '40px 20px', fontFamily: 'system-ui, sans-serif' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
 
@@ -151,4 +159,17 @@ export default function AdvancedDomainGeneratorPage() {
                         {item.status}
                       </span>
                     </td>
-                    <td style={{ padding: '12px', color: item.available
+                    <td style={{ padding: '12px', color: item.available ? '#10b981' : '#475569', fontWeight: '700' }}>
+                      {item.price}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
+
+      </div>
+    </main>
+  );
+}
