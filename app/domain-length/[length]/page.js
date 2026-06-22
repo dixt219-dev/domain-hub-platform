@@ -1,104 +1,158 @@
-import { getHistoricalSalesByLength, getHubLongFormContent } from '../../../lib/marketEngine';
+'use client';
+import { useState } from 'react';
 
-export async function generateMetadata({ params }) {
-  const length = params?.length || '4';
-  return { 
-    title: `Premium ${length}-Letter Domains Liquidity & Valuation Report` 
+const EXTENSIONS = ['com', 'net', 'org', 'io', 'ai', 'tech', 'co', 'app', 'dev', 'xyz', 'shop', 'online', 'me', 'biz', 'info'];
+const PREFIXES  = ['hub', 'box', 'labs', 'next', 'core', 'nova', 'apex', 'flow', 'grid', 'base'];
+
+export default function AdvancedDomainGeneratorPage() {
+  const [keyword, setKeyword]   = useState('');
+  const [results, setResults]   = useState([]);
+  const [loading, setLoading]   = useState(false);
+
+  const handleGenerate = async (e) => {
+    e.preventDefault();
+    if (!keyword.trim()) return;
+
+    setLoading(true);
+
+    const clean = keyword.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    // Build candidate list
+    const candidates = new Set();
+    EXTENSIONS.forEach(ext => candidates.add(`${clean}.${ext}`));
+    PREFIXES.forEach(pfx => {
+      candidates.add(`${clean}${pfx}.com`);
+      candidates.add(`${pfx}${clean}.com`);
+      candidates.add(`${clean}${pfx}.io`);
+    });
+
+    const initialResults = [...candidates].map(dom => ({
+      domain: dom,
+      status: 'Checking...',
+      available: null,
+      price: '-',
+    }));
+    setResults(initialResults);
+
+    // Check in parallel (batches of 5 to avoid rate limits)
+    const domainList = [...candidates];
+    const batchSize  = 5;
+
+    for (let i = 0; i < domainList.length; i += batchSize) {
+      const batch = domainList.slice(i, i + batchSize);
+      await Promise.all(batch.map(async (dom) => {
+        try {
+          const res  = await fetch(`/api/check-domain?domain=${dom}`);
+          const data = await res.json();
+          setResults(prev =>
+            prev.map(r =>
+              r.domain === dom
+                ? { ...r, status: data.available ? '✅ Available' : '❌ Taken', available: data.available, price: data.price }
+                : r
+            )
+          );
+        } catch {
+          setResults(prev =>
+            prev.map(r => r.domain === dom ? { ...r, status: '⚠️ Error', available: false, price: 'N/A' } : r)
+          );
+        }
+      }));
+    }
+
+    setLoading(false);
   };
-}
-
-export default async function AdvancedDomainHubPage({ params }) {
-  const length = params?.length || '4';
-  const numLength = parseInt(length) || 4;
-
-  // جلب البيانات مع تأمين الدوال ضد قيم الـ undefined
-  const { salesData, stats } = await getHistoricalSalesByLength(numLength, 'all', 'highest_sale');
-  const article = await getHubLongFormContent(numLength);
 
   return (
-    <main style={{ padding: '40px 24px', fontFamily: 'system-ui, -apple-system, sans-serif', backgroundColor: '#020617', color: '#f8fafc', minHeight: '100vh', lineSpacing: '1.25' }}>
-      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-        
-        {/* Header Section */}
-        <header style={{ borderBottom: '1px solid #1e293b', paddingBottom: '24px', marginBottom: '32px' }}>
-          <h1 style={{ color: '#ffffff', fontSize: '32px', fontWeight: '800', margin: '0 0 8px 0', letterSpacing: '-0.025em' }}>
-            Market Intelligence: <span style={{ background: 'linear-gradient(to right, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{numLength}-Letter Assets</span>
+    <main style={{ minHeight: '100vh', backgroundColor: '#020617', color: '#f8fafc', padding: '40px 20px', fontFamily: 'system-ui, sans-serif' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+
+        {/* Header */}
+        <header style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <h1 style={{ fontSize: '2.2rem', fontWeight: '800', letterSpacing: '-0.02em', color: '#fff' }}>
+            🛡️ Professional Live Domain Scanner
           </h1>
-          <p style={{ color: '#94a3b8', fontSize: '16px', margin: 0 }}>
-            Institutional transaction logs, valuation matrices, and macro liquidity vectors.
+          <p style={{ color: '#94a3b8', fontSize: '1rem', marginTop: '8px' }}>
+            Real prices, live Dynadot checks, {EXTENSIONS.length}+ extensions supported instantly.
           </p>
         </header>
 
-        {/* Analytics Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '40px' }}>
-          <div style={{ backgroundColor: '#0f172a', padding: '24px', borderRadius: '12px', border: '1px solid #1e293b' }}>
-            <span style={{ color: '#64748b', fontSize: '13px', fontWeight: '600', textTransform: 'uppercase' }}>Volume Cap</span>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: '#fff', marginTop: '6px' }}>${stats?.totalVolume?.toLocaleString() || '0'}</div>
-          </div>
-          <div style={{ backgroundColor: '#0f172a', padding: '24px', borderRadius: '12px', border: '1px solid #1e293b' }}>
-            <span style={{ color: '#64748b', fontSize: '13px', fontWeight: '600', textTransform: 'uppercase' }}>Mean Asset Price</span>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: '#818cf8', marginTop: '6px' }}>${stats?.avgSale?.toLocaleString() || '0'}</div>
-          </div>
-          <div style={{ backgroundColor: '#0f172a', padding: '24px', borderRadius: '12px', border: '1px solid #1e293b' }}>
-            <span style={{ color: '#64748b', fontSize: '13px', fontWeight: '600', textTransform: 'uppercase' }}>Floor Limit</span>
-            <div style={{ fontSize: '24px', fontWeight: '700', color: '#34d399', marginTop: '6px' }}>${stats?.floorPrice?.toLocaleString() || '0'}</div>
-          </div>
-        </div>
+        {/* Search */}
+        <section style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '28px', marginBottom: '32px' }}>
+          <form onSubmit={handleGenerate} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <input
+              type="text"
+              value={keyword}
+              onChange={e => setKeyword(e.target.value)}
+              placeholder="Enter your brand keyword (e.g. nova, tech, flow)..."
+              style={{
+                flex: 1, minWidth: '220px', padding: '14px 18px',
+                backgroundColor: '#020617', border: '1px solid #334155',
+                borderRadius: '10px', color: '#fff', fontSize: '16px', outline: 'none'
+              }}
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                padding: '14px 28px', backgroundColor: loading ? '#1e293b' : '#10b981',
+                border: 'none', borderRadius: '10px', color: '#fff',
+                fontSize: '16px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer',
+                transition: 'background-color 0.2s'
+              }}
+            >
+              {loading ? 'Scanning...' : 'Generate & Verify'}
+            </button>
+          </form>
+        </section>
 
-        {/* Database Table Section */}
-        <section style={{ backgroundColor: '#0f172a', borderRadius: '12px', border: '1px solid #1e293b', padding: '24px', marginBottom: '40px' }}>
-          <h2 style={{ color: '#ffffff', fontSize: '20px', fontWeight: '700', marginTop: '0', marginBottom: '16px' }}>
-            📊 Verified Transaction Matrix
-          </h2>
-          <div style={{ overflowX: 'auto' }}>
+        {/* Results */}
+        {results.length > 0 && (
+          <section style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '24px', overflowX: 'auto' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#94a3b8', marginBottom: '16px' }}>
+              Suggested Domains ({results.length})
+            </h2>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid #1e293b', color: '#64748b', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase' }}>
-                  <th style={{ padding: '12px 16px' }}>Asset Identifier</th>
-                  <th style={{ padding: '12px 16px' }}>Settlement Value</th>
-                  <th style={{ padding: '12px 16px' }}>Index Baseline</th>
+                <tr style={{ borderBottom: '1px solid #1e293b' }}>
+                  <th style={{ padding: '10px 12px', color: '#64748b', fontSize: '13px' }}>Suggested Domain</th>
+                  <th style={{ padding: '10px 12px', color: '#64748b', fontSize: '13px' }}>Live Status</th>
+                  <th style={{ padding: '10px 12px', color: '#64748b', fontSize: '13px' }}>Real Registry Price</th>
                 </tr>
               </thead>
               <tbody>
-                {salesData && salesData.map((asset, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid #1e293b', fontSize: '14px', transition: 'background-color 0.2s' }}>
-                    <td style={{ padding: '16px', fontWeight: '600', color: '#f1f5f9' }}>{asset.name}</td>
-                    <td style={{ padding: '16px', color: '#34d399', fontWeight: '600' }}>${asset.lastSale?.toLocaleString()}</td>
-                    <td style={{ padding: '16px', color: '#818cf8' }}>${asset.compAverage?.toLocaleString()}</td>
+                {results.map((item, idx) => (
+                  <tr
+                    key={idx}
+                    style={{
+                      borderBottom: '1px solid #0f172a',
+                      backgroundColor: item.available === true ? 'rgba(16,185,129,0.05)' : 'transparent',
+                      transition: 'background-color 0.2s'
+                    }}
+                  >
+                    <td style={{ padding: '12px', fontFamily: 'monospace', fontSize: '15px', color: '#38bdf8', fontWeight: '600' }}>
+                      {item.domain}
+                    </td>
+                    <td style={{ padding: '12px' }}>
+                      <span style={{
+                        padding: '4px 10px', borderRadius: '20px', fontSize: '13px', fontWeight: '600',
+                        backgroundColor:
+                          item.available === true  ? 'rgba(16,185,129,0.15)' :
+                          item.available === false ? 'rgba(239,68,68,0.15)'  : 'rgba(100,116,139,0.15)',
+                        color:
+                          item.available === true  ? '#10b981' :
+                          item.available === false ? '#ef4444' : '#64748b',
+                      }}>
+                        {item.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px', color: item.available ? '#10b981' : '#475569', fontWeight: '700' }}>
+                      {item.price}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        </section>
-
-        {/* Editorial Content Section */}
-        {article && (
-          <article style={{ backgroundColor: '#0f172a', borderRadius: '12px', border: '1px solid #1e293b', padding: '32px', lineHeight: '1.75' }}>
-            <h2 style={{ color: '#ffffff', fontSize: '22px', fontWeight: '700', marginTop: '0', marginBottom: '20px' }}>
-              {article.title}
-            </h2>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
-              <div>
-                <h3 style={{ color: '#818cf8', fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>
-                  {article.section1?.heading}
-                </h3>
-                <p style={{ color: '#cbd5e1', fontSize: '15px', margin: '0' }}>
-                  {article.section1?.body}
-                </p>
-              </div>
-              
-              <div style={{ borderTop: '1px solid #1e293b', paddingTop: '20px' }}>
-                <h3 style={{ color: '#c084fc', fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>
-                  {article.section2?.heading}
-                </h3>
-                <p style={{ color: '#cbd5e1', fontSize: '15px', margin: '0' }}>
-                  {article.section2?.body}
-                </p>
-              </div>
-            </div>
-          </article>
+          </section>
         )}
 
       </div>
