@@ -4,11 +4,11 @@ export async function POST(request) {
   try {
     const { domain } = await request.json();
     
-    // جلب المفاتيح بأمان من إعدادات السيرفر
-    const apiKey = process.env.DYNADOT_API_KEY || "8S6i8iH8e7i8Bb8G7E607IJ9J608o8t856Kw7E8W7QE";
-    const secretKey = process.env.DYNADOT_SECRET_KEY || "492bf2747f4ee49f00c92f86039b9bd84ad523a568a8281db76ce3c9f1e8e116";
+    // وضع المفاتيح داخل نصوص مغلقة بعلامات التنصيص لمنع أخطاء البناء
+    const apiKey = "8S6i8iH8e7i8Bb8G7E607IJ9J608o8t856Kw7E8W7QE";
+    const secretKey = "492bf2747f4ee49f00c92f86039b9bd84ad523a568a8281db76ce3c9f1e8e116";
 
-    // طلب الفحص الكامل الذي يحتوي على تفاصيل الأسعار والتجديد
+    // إرسال الطلب إلى سيرفر Dynadot الرسمي مع حزمة التحقق
     const response = await fetch(`https://api.dynadot.com/v3/virtual/domain/search?domain=${domain}`, {
       method: 'GET',
       headers: {
@@ -19,7 +19,7 @@ export async function POST(request) {
 
     const data = await response.json();
 
-    // التحقق من استجابة دينادوت وقراءة الأسعار الحية
+    // قراءة النتيجة والأسعار الحية من السيرفر
     const result = data.results?.[0] || {};
     const isAvailable = result.available === true;
     
