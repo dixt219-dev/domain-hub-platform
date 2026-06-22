@@ -17,7 +17,7 @@ export default function AdvancedDomainGeneratorPage() {
 
     const clean = keyword.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 
-    // بناء قائمة النطاقات
+    // بناء مصفوفة النطاقات
     const candidates = new Set();
     EXTENSIONS.forEach(ext => candidates.add(`${clean}.${ext}`));
     PREFIXES.forEach(pfx => {
@@ -28,7 +28,7 @@ export default function AdvancedDomainGeneratorPage() {
 
     const domainList = [...candidates];
 
-    // وضع الحالة المبدئية: Waiting
+    // وضع حالة الانتظار المبدئية لجميع النطاقات
     const initialResults = domainList.map(dom => ({
       domain: dom,
       status: 'Waiting...',
@@ -37,11 +37,11 @@ export default function AdvancedDomainGeneratorPage() {
     }));
     setResults(initialResults);
 
-    // الفحص المتسلسل الآمن
+    // الفحص التسلسلي المضمون لحماية السيرفر من التعليق
     for (let i = 0; i < domainList.length; i++) {
       const dom = domainList[i];
 
-      // تحويل النطاق الحالي فقط إلى Checking
+      // تحويل حالة النطاق الحالي فقط إلى Checking
       setResults(prev => {
         const next = [...prev];
         if (next[i]) next[i].status = '⏳ Checking...';
@@ -72,6 +72,9 @@ export default function AdvancedDomainGeneratorPage() {
           return next;
         });
       }
+
+      // تأخير بسيط جداً (50 ميلّي ثانية) لتنفس السيرفر ومنع الحظر
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
 
     setLoading(false);
@@ -81,6 +84,7 @@ export default function AdvancedDomainGeneratorPage() {
     <main style={{ minHeight: '100vh', backgroundColor: '#020617', color: '#f8fafc', padding: '40px 20px', fontFamily: 'system-ui, sans-serif' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
 
+        {/* Header */}
         <header style={{ textAlign: 'center', marginBottom: '40px' }}>
           <h1 style={{ fontSize: '2.2rem', fontWeight: '800', letterSpacing: '-0.02em', color: '#fff' }}>
             🛡️ Professional Live Domain Scanner
@@ -90,6 +94,7 @@ export default function AdvancedDomainGeneratorPage() {
           </p>
         </header>
 
+        {/* Search Form */}
         <section style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '28px', marginBottom: '32px' }}>
           <form onSubmit={handleGenerate} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <input
@@ -118,6 +123,7 @@ export default function AdvancedDomainGeneratorPage() {
           </form>
         </section>
 
+        {/* Results Table */}
         {results.length > 0 && (
           <section style={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '24px', overflowX: 'auto' }}>
             <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#94a3b8', marginBottom: '16px' }}>
