@@ -29,35 +29,48 @@ export async function GET(request) {
     const tld = cleanDomain.substring(lastDotIndex + 1);
     const price = TLD_PRICES[tld] ?? '12.99';
 
-    // Dynadot API call
+    if (!DYNADOT_API_KEY) {
+      return NextResponse.json({ error: 'API key missing in Vercel config' }, { status: 500 });
+    }
+
     const dynadotUrl = `https://api.dynadot.com/api3.json?key=${DYNADOT_API_KEY}&command=search&domain0=${cleanDomain}`;
-    const res = await fetch(dynadotUrl, { next: { revalidate: 0 } });
+    
+    // تحديد مهلة زمنية للطلب (4 ثوانٍ) لمنع تعليق خوادم Vercel والواجهة
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    const res = await fetch(dynadotUrl, { 
+      next: { revalidate: 0 },
+      signal: controller.signal 
+    });
+    
+    clearTimeout(timeoutId);
 
     if (!res.ok) {
-      throw new Error(`Dynadot API error: ${res.status}`);
+      throw new Error(`Dynadot HTTP error: ${res.status}`);
     }
 
     const data = await res.json();
-
-    // Dynadot returns SearchResponse > SearchResults > SearchResult[]
     const results = data?.SearchResponse?.SearchResults?.SearchResult;
     const result = Array.isArray(results) ? results[0] : results;
 
     if (!result) {
-      throw new Error('No result from Dynadot');
+      throw new Error('No result block from Dynadot');
     }
 
-    // "yes" = available, "no" = taken
     const isAvailable = result.Available?.toLowerCase() === 'yes';
 
     return NextResponse.json({
       available: isAvailable,
-      price: isAvailable ? `$${price}` : 'N/A',
-      domain: cleanDomain,
+      price: isAvailable ? `$${price}` : 'N/A'
     });
 
   } catch (error) {
-    console.error('check-domain error:', error);
-    return NextResponse.json({ available: false, price: 'N/A', error: 'Check failed' }, { status: 500 });
+    console.error('API backend error:', error.message);
+    return NextResponse.json({ 
+      available: false, 
+      price: 'N/A', 
+      error: error.message 
+    }, { status: 500 });
   }
 }
