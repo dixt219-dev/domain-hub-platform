@@ -12,7 +12,7 @@ export async function POST(request) {
     const domainName = domain.substring(0, lastDotIndex);
     const tld = domain.substring(lastDotIndex + 1);
 
-    const apiKey = "8S6i8iH8e7i8Bb8G7E607IJ9J608o8t856Kw7E8W7QE";
+    const apiKey = "8S6i8iH8e7i8Bb8G7E607IJ9J6O8o8t856Kw7E8W7QE";
 
     // طلب البحث القياسي
     const apiUrl = `https://api.dynadot.com/v3/virtual/domain/search?key=${apiKey}&domain=${domainName}&tlds=${tld}`;
