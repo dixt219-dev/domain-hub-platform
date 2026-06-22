@@ -1,5 +1,15 @@
 import { NextResponse } from 'next/server';
 
+const DYNADOT_API_KEY = process.env.DYNADOT_API_KEY;
+
+const TLD_PRICES = {
+  com: '11.99', net: '13.50', org: '14.20',
+  io: '34.99', ai: '59.99', tech: '3.99',
+  co: '22.00', app: '14.50', dev: '12.00',
+  xyz: '1.99', shop: '2.58', online: '4.99',
+  me: '9.99', biz: '9.99', info: '9.99',
+};
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -11,52 +21,43 @@ export async function GET(request) {
 
     const cleanDomain = domain.trim().toLowerCase();
     const lastDotIndex = cleanDomain.lastIndexOf('.');
-    
+
     if (lastDotIndex === -1) {
       return NextResponse.json({ available: false, price: 'N/A' });
     }
 
     const tld = cleanDomain.substring(lastDotIndex + 1);
+    const price = TLD_PRICES[tld] ?? '12.99';
 
-    // 1. الاتصال بسيرفر RDAP العالمي المفتوح لفحص حالة الدومين الحقيقية حياً
-    // هذا السيرفر لا يحتاج API Key ومستحيل يبلوكي Vercel
-    const rdapUrl = `https://rdap.org/domain/${cleanDomain}`;
-    const rdapRes = await fetch(rdapUrl, { method: 'GET', next: { revalidate: 0 } });
-    
-    let isAvailable = false;
+    // Dynadot API call
+    const dynadotUrl = `https://api.dynadot.com/api3.json?key=${DYNADOT_API_KEY}&command=search&domain0=${cleanDomain}`;
+    const res = await fetch(dynadotUrl, { next: { revalidate: 0 } });
 
-    // في بروتوكول RDAP: إذا أرجع السيرفر كود 404، فهذا يعني أن الدومين غير موجود ومتاح للشراء 100%
-    if (rdapRes.status === 404) {
-      isAvailable = true;
-    } else if (rdapRes.ok) {
-      isAvailable = false; // الدومين محجوز وموجود في السجل الدولي
-    } else {
-      // احتياطاً إذا تبلك السيرفر، نعتبر الاقتراحات الطويلة متاحة
-      isAvailable = cleanDomain.length > 12;
+    if (!res.ok) {
+      throw new Error(`Dynadot API error: ${res.status}`);
     }
 
-    // 2. تحديد السعر الحقيقي التلقائي حسب الـ TLD (لأن سيرفرات الفحص الحرة لا تعطي أسعار، الأسعار تحددها أنت في منصتك)
-    let price = '12.99';
-    if (tld === 'com') price = '11.99';
-    else if (tld === 'net') price = '13.50';
-    else if (tld === 'org') price = '14.20';
-    else if (tld === 'io') price = '34.99';
-    else if (tld === 'ai') price = '59.99';
-    else if (tld === 'tech') price = '3.99';
-    else if (tld === 'co') price = '22.00';
-    else if (tld === 'app') price = '14.50';
-    else if (tld === 'dev') price = '12.00';
-    else if (tld === 'xyz') price = '1.99';
-    else if (tld === 'shop') price = '2.50';
-    else if (tld === 'online') price = '4.99';
+    const data = await res.json();
+
+    // Dynadot returns SearchResponse > SearchResults > SearchResult[]
+    const results = data?.SearchResponse?.SearchResults?.SearchResult;
+    const result = Array.isArray(results) ? results[0] : results;
+
+    if (!result) {
+      throw new Error('No result from Dynadot');
+    }
+
+    // "yes" = available, "no" = taken
+    const isAvailable = result.Available?.toLowerCase() === 'yes';
 
     return NextResponse.json({
       available: isAvailable,
-      price: isAvailable ? `$${price}` : 'N/A'
+      price: isAvailable ? `$${price}` : 'N/A',
+      domain: cleanDomain,
     });
 
   } catch (error) {
-    // كود أمان احتياطي
-    return NextResponse.json({ available: false, price: 'N/A' });
+    console.error('check-domain error:', error);
+    return NextResponse.json({ available: false, price: 'N/A', error: 'Check failed' }, { status: 500 });
   }
 }
